@@ -79,28 +79,28 @@ jobs:
       with:
         name: MultiConverter${{ github.event.release.tag_name }}
         path: .\MultiConverterGUI\bin\Release\net5.0-windows\win-x64\publish
-        
-    - name: Changelog
-      uses: scottbrenner/generate-changelog-action@master
-      id: Changelog
-      
-    - name: Create Release
-      id: create_release
-      uses: actions/create-release@latest
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # This token is provided by Actions, you do not need to create your own token
-      with:
-        tag_name: ${{ github.ref }}
-        release_name: Release ${{ github.ref }}
-        body: |
-          ${{ steps.Changelog.outputs.changelog }}
-        draft: false
-        prerelease: false
-    - name: upload windows artifact
-      uses: actions/upload-release-asset@v1
-      env:
-       GITHUB_TOKEN: ${{ github.token }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: .\MultiConverter${{ github.event.release.tag_name }}.zip
+    #
+    #- name: Changelog
+    #  uses: scottbrenner/generate-changelog-action@master
+    #  id: Changelog
+    #   
+    #- name: Create Release
+    #  id: create_release
+    #  uses: actions/create-release@latest
+    #  env:
+    #    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # This token is provided by Actions, you do not need to create your own token
+    #  with:
+    #    tag_name: ${{ github.ref }}
+    #    release_name: Release ${{ github.ref }}
+    #    body: |
+    #      ${{ steps.Changelog.outputs.changelog }}
+    #    draft: false
+    #    prerelease: false
+    #- name: upload windows artifact
+    #  uses: actions/upload-release-asset@v1
+    #  env:
+    #   GITHUB_TOKEN: ${{ github.token }}
+    #  with:
+    #    upload_url: ${{ steps.create_release.outputs.upload_url }}
+    #    asset_path: .\MultiConverter${{ github.event.release.tag_name }}.zip
         
