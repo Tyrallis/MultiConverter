@@ -78,4 +78,4 @@ jobs:
       uses: actions/upload-artifact@v2
       with:
         name: Build Artifact
-        path: MultiConverter\MultiConverterGUI\bin\Release\net5.0-windows\win-x64\publish
+        path: .\MultiConverterGUI\bin\Release\net5.0-windows\win-x64
