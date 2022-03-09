@@ -36,6 +36,10 @@ jobs:
     - name: Build
       working-directory: ./MultiConverterGUI
       run: dotnet publish -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true
+      
+    - name: Rename Build
+      working-directory: .\MultiConverterGUI\bin\Release\net5.0-windows\win-x64\publish
+      run: ren MultiConverterGUI.exe MultiConverter_${{ steps.tag_version.outputs.new_tag }}.exe
 
     - name: Upload build artifacts
       uses: actions/upload-artifact@v2
@@ -51,20 +55,13 @@ jobs:
         name: Release ${{ steps.tag_version.outputs.new_tag }}
         body: ${{ steps.tag_version.outputs.changelog }}
 
-    - uses: actions/download-artifact@v3
-      with:
-        name: MultiConverter_${{ steps.tag_version.outputs.new_tag }}
-        
-    - name: Display structure of downloaded files
-      run: ls -R
-        
     - name: upload windows artifact
       uses: actions/upload-release-asset@v1
       env:
        GITHUB_TOKEN: ${{ github.token }}
       with:
         upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: D:\a\MultiConverter\MultiConverter\MultiConverter_${{ steps.tag_version.outputs.new_tag }}.zip
-        asset_name: MultiConverter_${{ steps.tag_version.outputs.new_tag }}.zip
-        asset_content_type: application/zip
+        asset_path: .\MultiConverterGUI\bin\Release\net5.0-windows\win-x64\publish\MultiConverter_${{ steps.tag_version.outputs.new_tag }}.exe
+        asset_name: MultiConverter_${{ steps.tag_version.outputs.new_tag }}.exe
+        asset_content_type: application/exe
         
