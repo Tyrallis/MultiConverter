@@ -1,0 +1,7 @@
+﻿.vs
+MultiConverterGUI/bin
+MultiConverterGUI/obj
+MultiConverterLib/bin
+MultiConverterLib/obj
+MultiConverterLib/listfile.csv
+listfile.csv
