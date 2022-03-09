@@ -1,6 +1,8 @@
 # MultiConverter
 ### Shadowlands to Wotlk
 
+![Build](https://github.com/callumhutchy/MultiConverter/actions/workflows/dotnet-desktop/badge.svg)
+
 ## Features
 - Supported formats M2, ADT, WMO
 - Can recombine Skel files back into M2
