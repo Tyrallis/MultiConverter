@@ -35,7 +35,7 @@ jobs:
 
     - name: Build
       working-directory: ./MultiConverterGUI
-      run: dotnet publish -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:Version=${{ steps.tag_version.outputs.new_tag }}
+      run: dotnet publish -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true
 
     - name: Upload build artifacts
       uses: actions/upload-artifact@v2
