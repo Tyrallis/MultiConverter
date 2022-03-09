@@ -7,6 +7,7 @@
 
 ## [Requirements]
 ## [Usage]
+## [Converting Shadowlands Model Guide]
 
 ## Support
 Use the [Issues] section on Github to report any issues,
@@ -34,3 +35,4 @@ Updated by [callumhutchy]
    [Model Changing]: <https://model-changing.net>
    [Requirements]: <https://github.com/callumhutchy/MultiConverter/wiki/Requirements>
    [Usage]: <https://github.com/callumhutchy/MultiConverter/wiki/Usage>
+   [Converting Shadowlands Model Guide]: <https://github.com/callumhutchy/MultiConverter/wiki/Converting-Shadowlands-model-to-Wotlk-using-M2Mod-and-MultiConverter>
