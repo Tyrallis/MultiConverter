@@ -27,11 +27,7 @@ namespace MultiConverterGUI
     /// </summary>
     public partial class MainWindow : Window
     {
-        int progress = 0;
         public static int PROGRESS = 5;
-        private int threadRemaining = 0;
-        private int converted = 0;
-        private int toConverted = 0;
         public MainWindow()
         {
             if (!Listfile.IsInitialized)
@@ -44,7 +40,6 @@ namespace MultiConverterGUI
         {
             if (e.Data.GetDataPresent(DataFormats.FileDrop))
             {
-                progress = 0;
                 string[] list = (string[])e.Data.GetData(DataFormats.FileDrop);
                 LoadFiles(list);
             }
@@ -105,7 +100,6 @@ namespace MultiConverterGUI
             int pc = Environment.ProcessorCount * 2 - 1;
             pc = lb.Items.Count < pc ? 1 : pc;
             int count = lb.Items.Count, div = count / pc, r = count % pc;
-            threadRemaining = pc;
 
             if (File.Exists("error.log"))
             {
@@ -117,8 +111,6 @@ namespace MultiConverterGUI
             lb.Items.CopyTo(lbitems, 0);
             items.AddRange(lbitems);
 
-            converted = 0;
-            toConverted = items.Count;
 
             List<string> files = new List<string>();
             foreach (object o in items)
