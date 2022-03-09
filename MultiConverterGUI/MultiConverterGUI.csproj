@@ -2,10 +2,16 @@
 
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
-    <TargetFramework>net6.0-windows</TargetFramework>
+    <TargetFramework>net5.0-windows</TargetFramework>
     <Nullable>enable</Nullable>
     <UseWPF>true</UseWPF>
+	  <ImplicitUsings>disable</ImplicitUsings>
   </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Markdig" Version="0.27.0" />
+    <PackageReference Include="MdXaml" Version="1.13.0" />
+  </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\MultiConverterLib\MultiConverterLib.csproj" />

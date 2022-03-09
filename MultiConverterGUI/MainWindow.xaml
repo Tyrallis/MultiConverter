@@ -5,12 +5,34 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:MultiConverterGUI"
         mc:Ignorable="d"
-        Title="MainWindow" Height="405" Width="365">
-    <Grid>
-        <ListBox x:Name="lb" Margin="10,10,10,181" Drop="lb_Drop" DragEnter="lb_DragEnter" AllowDrop="true"/>
-        <ProgressBar HorizontalAlignment="Center" Height="34" Margin="0,213,0,0" VerticalAlignment="Top" Width="345"/>
-        <Button x:Name="btnFix" Content="Fix" HorizontalAlignment="Left" Margin="10,252,0,0" VerticalAlignment="Top" Height="42" Width="172" Click="btnFix_Click"/>
-        <Button x:Name="btnClear" Content="Clear" HorizontalAlignment="Left" Margin="187,252,0,0" VerticalAlignment="Top" Height="42" Width="168" Click="btnClear_Click"/>
+        Title="MultiConverter" Height="419" Width="368"  SizeToContent="Height">
+    <Grid Margin="0,0,0,16">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="8*"/>
+            <ColumnDefinition Width="86*"/>
+            <ColumnDefinition Width="275*"/>
+        </Grid.ColumnDefinitions>
+        <ListBox x:Name="lb" Margin="2,10,10,181"  AllowDrop="true" DragEnter="lb_DragEnter" Drop="lb_Drop" ScrollViewer.CanContentScroll="True" ScrollViewer.VerticalScrollBarVisibility="Auto" ScrollViewer.HorizontalScrollBarVisibility="Auto" Grid.ColumnSpan="2" Grid.Column="1">
+
+        </ListBox>
+        <ProgressBar x:Name="pb" Margin="4,213,12,140" Grid.ColumnSpan="2" Grid.Column="1"/>
+        <Button x:Name="btnFix" Content="Fix" Margin="2,252,183,93" Click="btnFix_Click" Grid.ColumnSpan="2" Grid.Column="1"/>
+        <Button x:Name="btnClear" Content="Clear" Margin="94,252,10,93" Click="btnClear_Click" Grid.Column="2"/>
+        <GroupBox Header="M2" Margin="2,306,0,40" HorizontalAlignment="Left" Width="102" Grid.ColumnSpan="2" Grid.Column="1">
+            <CheckBox x:Name="cbFixHelm" Content="Fix Helm Offset" FontSize="10"/>
+        </GroupBox>
+        <Button x:Name="btnAbout" Content="About" HorizontalAlignment="Left" Margin="2,352,0,8" Width="49" Click="btnAbout_Click" Grid.Column="1"/>
+        <GroupBox Header="ADT" Margin="24,306,0,40" HorizontalAlignment="Left" Width="123" Grid.Column="2">
+            <Grid>
+                <CheckBox x:Name="cbLiquids" Content="Liquids" FontSize="10" Margin="0,0,57,0" />
+                <CheckBox x:Name="cbModels" Content="Models" FontSize="10" Margin="56,0,0,0" />
+
+            </Grid>
+
+        </GroupBox>
+        <GroupBox Header="WMO" Margin="152,306,0,40" HorizontalAlignment="Left" Width="102" Grid.Column="2">
+            <CheckBox x:Name="cbLegionWOD" Content="Legion > WOD" FontSize="10" Margin="0,0,1,0"/>
+        </GroupBox>
 
     </Grid>
 </Window>

@@ -22,7 +22,7 @@ namespace MultiConverterLib
 
         private int animOfs, nAnim, animLookupOfs, nAnimLookups;
         private bool loadSkel = false;
-        private Skel skel;
+        private Skel? skel;
 
         public M2Converter(string m2, bool fix_helm) : base(m2)
         {
@@ -45,33 +45,6 @@ namespace MultiConverterLib
 
                         switch (chunk)
                         {
-                            case "MD21":
-                                // Save start offset of MD20
-                                var offset = reader.BaseStream.Position;
-
-                                // Skip Magic & Version
-                                reader.ReadBytes(0x08);
-                                var modelNameSize = reader.ReadInt32();
-                                var modelNameOfs = reader.ReadUInt32() + 8;
-
-                                reader.BaseStream.Position = modelNameOfs;
-                                //modelName = new string(reader.ReadChars(modelNameSize)).Replace("\0", "");
-                                reader.BaseStream.Position = offset;
-
-                                // Skip to M2Array<Texture>.
-                                reader.ReadBytes(0x50);
-                                reader.ReadInt32();
-                                //textureOffset = reader.ReadInt32();
-
-                                reader.BaseStream.Position = offset + size;
-                                break;
-                            /*
-                        case "TXID":
-                            ReadTXID(reader, size);
-                            break;
-                        case "SFID":
-                            ReadSFID(reader, size);
-                            break;*/
                             case "SKID":
                                 ReadSKID(reader, size);
                                 break;
@@ -81,7 +54,6 @@ namespace MultiConverterLib
                                 break;
                         }
                     }
-
                     stream.Close();
                     reader.Close();
                 }
@@ -90,7 +62,8 @@ namespace MultiConverterLib
                 offset = ReadUInt(0x12C);
 
                 if (loadSkel)
-                {//Add bones, sequences, attachments loaded from skel
+                {
+                    //Add bones, sequences, attachments loaded from skel
                     ByteBuffer skelBb = new ByteBuffer(File.ReadAllBytes(m2.Replace(".m2", ".skel")));
                     skel = new Skel(skelBb);
 
@@ -157,7 +130,7 @@ namespace MultiConverterLib
             //Bones
             WriteBytes(0x2C, bones.bones.ToBytes(ref data));
             WriteBytes(0x34, bones.key_bone_lookup.ToBytes(ref data));
-            /*
+            
             List<M2Attachment> wotlkAttachments = new List<M2Attachment>();
             List<M2UShort> lookupattach = new List<M2UShort>();
 
@@ -176,7 +149,7 @@ namespace MultiConverterLib
             //Attachments
             WriteBytes(0xF0, attachments.attachments.ToBytes(ref data));
             WriteBytes(0xF8, attachments.attachment_lookup_table.ToBytes(ref data));
-            */
+            
             InsertBytes(data.buffer.ToArray());
         }
 

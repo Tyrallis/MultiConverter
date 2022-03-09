@@ -18,6 +18,7 @@ using System.IO;
 using System.ComponentModel;
 using MultiConverterLib;
 using MultiConverter.Lib;
+using System.Threading;
 
 namespace MultiConverterGUI
 {
@@ -27,6 +28,10 @@ namespace MultiConverterGUI
     public partial class MainWindow : Window
     {
         int progress = 0;
+        public static int PROGRESS = 5;
+        private int threadRemaining = 0;
+        private int converted = 0;
+        private int toConverted = 0;
         public MainWindow()
         {
             if (!Listfile.IsInitialized)
@@ -96,14 +101,39 @@ namespace MultiConverterGUI
 
         private void btnFix_Click(object sender, RoutedEventArgs e)
         {
+            // multi threading only if there's enough models to fix
+            int pc = Environment.ProcessorCount * 2 - 1;
+            pc = lb.Items.Count < pc ? 1 : pc;
+            int count = lb.Items.Count, div = count / pc, r = count % pc;
+            threadRemaining = pc;
+
+            if (File.Exists("error.log"))
+            {
+                System.IO.File.WriteAllText("error.log", string.Empty);
+            }
+
             List<object> items = new List<object>();
             object[] lbitems = new object[lb.Items.Count];
             lb.Items.CopyTo(lbitems, 0);
             items.AddRange(lbitems);
+
+            converted = 0;
+            toConverted = items.Count;
+
             List<string> files = new List<string>();
             foreach (object o in items)
                 files.Add((string)o);
-            FixList(files);
+
+            for (int i = 0; i < pc; i++)
+            {
+                List<string> list = new List<string>();
+                int n = div + ((r-- > 0) ? 1 : 0);
+
+                foreach (object o in items.Take(n))
+                    list.Add(o.ToString());
+                items.RemoveRange(0, ((n > items.Count) ? items.Count : n));
+                FixList(list);
+            }
         }
 
         struct ConvertionErrorInfo
@@ -123,6 +153,14 @@ namespace MultiConverterGUI
             BackgroundWorker bw = new BackgroundWorker();
             bw.WorkerReportsProgress = true;
 
+            pb.Maximum = list.Count;
+            pb.Value = 0;
+            bool fixHelmet = cbFixHelm.IsChecked != null ? ((bool)cbFixHelm.IsChecked) : false;
+            bool fixLiquids = cbLiquids.IsChecked != null ? ((bool)cbLiquids.IsChecked) : false;
+            bool fixModels = cbModels.IsChecked != null ? ((bool)cbModels.IsChecked) : false;
+
+            int doneItems = 0;
+            bool done = false;
             bw.DoWork += new DoWorkEventHandler((sender, e) =>
             {
                 List<string> items = e.Argument as List<string>;
@@ -141,7 +179,27 @@ namespace MultiConverterGUI
 
                     if (s.EndsWith("m2"))
                     {
-                        converter = new M2Converter(s, true);
+                        converter = new M2Converter(s, fixHelmet);
+                    }
+                    else if (s.EndsWith("adt"))
+                    {
+                        converter = new AdtConverter(s, fixLiquids, fixModels);
+                    }
+                    else if (s.EndsWith("wdt"))
+                    {
+                        converter = new WDTConverter(s);
+                    }
+                    else if (Regex.IsMatch(s, @".*_[0-9]{3}(_(lod[0-9]))?\.(wmo)"))
+                    {
+                        converter = new WMOGroupConverter(s, wod);
+                    }
+                    else if (s.EndsWith("wmo"))
+                    {
+                        if (wod)
+                        {
+                            continue; // nothing to do
+                        }
+                        converter = new WMORootConverter(s);
                     }
                     else if (s.EndsWith("anim"))
                     {
@@ -160,18 +218,31 @@ namespace MultiConverterGUI
                     {
                         errors.Add(new ConvertionErrorInfo(exception, s));
                     }
-
+                    doneItems++;
                 }
-
+                done = true;
                 e.Result = errors;
             });
 
             bw.RunWorkerAsync(list);
+            while (!done)
+            {
+                pb.Value = doneItems;
+                Thread.Sleep(10);
+            }
+            pb.Value = doneItems;
         }
 
         private void btnClear_Click(object sender, RoutedEventArgs e)
         {
             lb.Items.Clear();
         }
+
+        private void btnAbout_Click(object sender, RoutedEventArgs e)
+        {
+            About about = new About();
+            about.Show();
+        }
+
     }
 }
