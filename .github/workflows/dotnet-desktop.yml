@@ -67,13 +67,10 @@ jobs:
       uses: actions/setup-dotnet@v1
       with:
         dotnet-version: 5.0.x
-  
-        
-    - name: CD
-      run: cd .\MultiConverterGUI
 
     # Execute all unit tests in the solution
     - name: Build
+      working-directory: ./MultiConverterGUI
       run: dotnet publish -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true
 
     # Upload the MSIX package: https://github.com/marketplace/actions/upload-a-build-artifact
