@@ -52,7 +52,7 @@ jobs:
       matrix:
         configuration: [Release]
 
-    runs-on: ubuntu-latest  # For a list of available runner types, refer to
+    runs-on: windows-latest  # For a list of available runner types, refer to
                              # https://help.github.com/en/actions/reference/workflow-syntax-for-github-actions#jobsjob_idruns-on
                 # Replace with the path to your Wap project, i.e. MyWpf.App.Package\MyWpfApp.Package.wapproj.
 
@@ -81,10 +81,9 @@ jobs:
         path: .\MultiConverterGUI\bin\Release\net5.0-windows\win-x64\publish
         
     - name: Changelog
-      uses: Bullrich/generate-release-changelog@master
+      uses: scottbrenner/generate-changelog-action@master
       id: Changelog
-      env:
-        REPO: ${{ github.repository }}
+      
     - name: Create Release
       id: create_release
       uses: actions/create-release@latest
