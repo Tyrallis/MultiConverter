@@ -68,6 +68,12 @@ jobs:
       with:
         dotnet-version: 5.0.x
 
+    - name: Bump version and push tag
+      id: tag_version
+      uses: mathieudutour/github-tag-action@v6.0
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+
     # Execute all unit tests in the solution
     - name: Build
       working-directory: ./MultiConverterGUI
@@ -77,30 +83,25 @@ jobs:
     - name: Upload build artifacts
       uses: actions/upload-artifact@v2
       with:
-        name: MultiConverter${{ github.event.release.tag_name }}
+        name: MultiConverter${{ steps.tag_version.outputs.new_tag }}
         path: .\MultiConverterGUI\bin\Release\net5.0-windows\win-x64\publish
     #
     #- name: Changelog
     #  uses: scottbrenner/generate-changelog-action@master
     #  id: Changelog
     #   
-    #- name: Create Release
-    #  id: create_release
-    #  uses: actions/create-release@latest
-    #  env:
-    #    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # This token is provided by Actions, you do not need to create your own token
-    #  with:
-    #    tag_name: ${{ github.ref }}
-    #    release_name: Release ${{ github.ref }}
-    #    body: |
-    #      ${{ steps.Changelog.outputs.changelog }}
-    #    draft: false
-    #    prerelease: false
-    #- name: upload windows artifact
-    #  uses: actions/upload-release-asset@v1
-    #  env:
-    #   GITHUB_TOKEN: ${{ github.token }}
-    #  with:
-    #    upload_url: ${{ steps.create_release.outputs.upload_url }}
-    #    asset_path: .\MultiConverter${{ github.event.release.tag_name }}.zip
+    - name: Create a GitHub release
+      uses: ncipollo/release-action@v1
+      id: create_release
+      with:
+        tag: ${{ steps.tag_version.outputs.new_tag }}
+        name: Release ${{ steps.tag_version.outputs.new_tag }}
+        body: ${{ steps.tag_version.outputs.changelog }}
+    - name: upload windows artifact
+      uses: actions/upload-release-asset@v1
+      env:
+       GITHUB_TOKEN: ${{ github.token }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: .\MultiConverter${{ steps.tag_version.outputs.new_tag }}.zip
         
