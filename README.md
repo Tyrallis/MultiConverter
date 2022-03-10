@@ -5,7 +5,7 @@
 
 ## Features
 - Supported formats M2, ADT, WMO (upto 8.0.1)
-- Can recombine Skel files back into M2
+- Can recombine Skel files back into M2, only for single level Skels doesn't currently work with models linking to parent skels
 
 ## [Requirements]
 ## [Usage]
