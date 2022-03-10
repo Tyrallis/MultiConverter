@@ -4,7 +4,7 @@
 ![Build](https://github.com/callumhutchy/MultiConverter/actions/workflows/dotnet-desktop.yml/badge.svg)
 
 ## Features
-- Supported formats M2, ADT, WMO
+- Supported formats M2, ADT, WMO (upto 8.0.1)
 - Can recombine Skel files back into M2
 
 ## [Requirements]
