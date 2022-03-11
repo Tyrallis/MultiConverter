@@ -8,6 +8,7 @@
 
 
 using MultiConverter.Lib.Converters.Base;
+using MultiConverterLib;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -458,13 +459,14 @@ namespace MultiConverter.Lib.Converters
         }
     }
 
-    public class M2Sequence : IM2Array
+    public class M2Sequence : IM2Array, ICloneable
     {
-        ushort id;
-        ushort variationIndex;
+        public ushort id;
+        public ushort variationIndex;
         uint duration;
         float moveSpeed;
         uint flags;
+        public bool isInM2 = false;
         short frequency;
         ushort padding;
         M2Range replay;
@@ -472,8 +474,8 @@ namespace MultiConverter.Lib.Converters
         ushort blendTimeIn; //For Above
         ushort blendTimeOut; //^^
         M2Bounds bounds;
-        short variationNext;
-        ushort aliasNext;
+        public short variationNext;
+        public ushort aliasNext;
 
         public M2Sequence() { }
         public M2Sequence(ref ByteBuffer bb, ref int offset)
@@ -488,6 +490,10 @@ namespace MultiConverter.Lib.Converters
             duration = bb.readUInt(ref offset);
             moveSpeed = bb.readFloat(ref offset);
             flags = bb.readUInt(ref offset);
+
+            isInM2 = (flags & (1 << 6 - 1)) != 0;
+
+
             frequency = bb.readShort(ref offset);
             padding = bb.readUShort(ref offset);
             replay = new M2Range(ref bb, ref offset);
@@ -527,6 +533,11 @@ namespace MultiConverter.Lib.Converters
             result.addUShort(aliasNext);
             return result.buffer.ToArray();
         }
+
+        public object Clone()
+        {
+            return this.MemberwiseClone();
+        }
     }
 
     public class M2UShort : IM2Array
@@ -563,9 +574,9 @@ namespace MultiConverter.Lib.Converters
         ushort submesh_id;
         ushort uDistToFurthDesc;
         ushort uZRatioOfChain;
-        M2Track<C3Vector> translation;
-        M2Track<M2CompQuat> rotation;
-        M2Track<C3Vector> scale;
+        public M2Track<C3Vector> translation;
+        public M2Track<M2CompQuat> rotation;
+        public M2Track<C3Vector> scale;
         C3Vector pivot;
 
         public M2CompBone() { }

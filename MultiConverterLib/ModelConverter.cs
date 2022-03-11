@@ -1,6 +1,8 @@
-﻿using MultiConverter.Lib.Converters;
+﻿using MultiConverter.Lib;
+using MultiConverter.Lib.Converters;
 using MultiConverter.Lib.Converters.Base;
 using System;
+using System.Linq;
 using System.Collections.Generic;
 using System.IO;
 using System.Text.RegularExpressions;
@@ -66,9 +68,135 @@ namespace MultiConverterLib
                     //Add bones, sequences, attachments loaded from skel
                     ByteBuffer skelBb = new ByteBuffer(File.ReadAllBytes(m2.Replace(".m2", ".skel")));
                     skel = new Skel(skelBb);
-
+                    if (skel.skpd != null)
+                    {
+                        //There is a parent skel file, so blend animations from the child and inherit the parent skel
+                        skel = BlendWithParent(skel, m2);
+                    }
                 }
             }
+        }
+
+        private Skel BlendWithParent(Skel skel, string m2)
+        {
+            string parentSkelName = Listfile.LookupFilename(skel.skpd.parent_skel_file_id, ".skel");
+            ByteBuffer parentSkelBb = new ByteBuffer(File.ReadAllBytes(System.IO.Path.GetDirectoryName(m2) + "\\" + System.IO.Path.GetFileName(parentSkelName)));
+            Skel parentSkel = new Skel(parentSkelBb);
+
+            List<M2Sequence> childSequences = new List<M2Sequence>(skel.sks1.sequences.values.ToList());
+
+            //Key is the parent new location and Value is the index in the child sequences, will use this for finding the right bones stuff
+            Dictionary<int, int> movedSequencesLink = new Dictionary<int, int>();
+
+            //Replace parent sequences with sequences from child that match id and sub id
+            for (int i = 0; i < parentSkel.sks1.sequences.size; i++)
+            {
+                M2Sequence parentSequence = parentSkel.sks1.sequences.values[i];
+                M2Sequence potentialReplacement = childSequences.FirstOrDefault(x => x.id.Equals(parentSequence.id) && x.variationIndex.Equals(parentSequence.variationIndex));
+                childSequences.Remove(potentialReplacement);
+
+                Dictionary<int, M2Sequence> chainToInsert = new Dictionary<int, M2Sequence>();
+
+                if (potentialReplacement != null)
+                {
+                    short nextAnimationParent = parentSequence.variationNext;
+                    if (nextAnimationParent != -1)
+                    {
+                        //Handle follow on animation
+                        if (potentialReplacement.variationNext == -1)
+                        {
+                            throw new Exception("Child animation doesn't have a follow on animation when it should");
+                        }
+                        bool noMoreFollowOns = false;
+                        M2Sequence chainParent = (M2Sequence)potentialReplacement.Clone();
+                        M2Sequence parentChainParent = parentSequence;
+
+                        potentialReplacement.variationNext = nextAnimationParent;
+                        chainToInsert.Add(i, potentialReplacement);
+                        while (!noMoreFollowOns)
+                        {
+                            M2Sequence childParentSequence = parentSkel.sks1.sequences.values[nextAnimationParent];
+                            M2Sequence followOnSequence = childSequences.FirstOrDefault(x => x.id.Equals(childParentSequence.id) && x.variationIndex.Equals(childParentSequence.variationIndex));
+                            if (followOnSequence == null)
+                            {
+                                chainToInsert.Last().Value.variationNext = -1;
+                                noMoreFollowOns = true;
+                                break;
+                            }
+                            childSequences.Remove(followOnSequence);
+                            followOnSequence.variationNext = childParentSequence.variationNext;
+                            chainToInsert.Add(nextAnimationParent, followOnSequence);
+                            if (childParentSequence.variationNext != -1)
+                            {
+                                parentChainParent = childParentSequence;
+                                chainParent = (M2Sequence)followOnSequence.Clone();
+                                nextAnimationParent = childParentSequence.variationNext;
+                            }
+                            else
+                            {
+                                noMoreFollowOns = true;
+                            }
+                        }
+                    }
+                    else
+                    {
+                        chainToInsert.Add(i, potentialReplacement);
+                    }
+                    foreach (KeyValuePair<int, M2Sequence> kvp in chainToInsert)
+                    {
+                        parentSkel.sks1.sequences.values[kvp.Key] = kvp.Value;
+                        movedSequencesLink.Add(kvp.Key, skel.sks1.sequences.values.ToList().IndexOf(skel.sks1.sequences.values.First(x => x.id.Equals(kvp.Value.id) && x.variationIndex.Equals(kvp.Value.variationIndex))));
+                    }
+                }
+            }
+
+            //Make sure aliasNexts are correct, they are just the index 
+            for (ushort k = 0; k < parentSkel.sks1.sequences.size; k++)
+            {
+                parentSkel.sks1.sequences.values[k].aliasNext = k;
+            }
+
+            //Update translations, rotations, scales
+
+            for (int boneIndex = 0; boneIndex < parentSkel.skb1.bones.size; boneIndex++)
+            {
+                M2CompBone parentBone = parentSkel.skb1.bones.values[boneIndex];
+                M2CompBone childBone = skel.skb1.bones.values[boneIndex];
+
+
+                foreach (KeyValuePair<int, int> animIndexes in movedSequencesLink)
+                {
+                    //Timestamps
+
+                    //Translations
+                    if (parentBone.translation.timestamps.size > 0 && parentBone.translation.timestamps.size > 0 && childBone.translation.timestamps.size > animIndexes.Value)
+                        parentBone.translation.timestamps.values[animIndexes.Key] = childBone.translation.timestamps.values[animIndexes.Value];
+                    //Rotatations
+                    if (parentBone.rotation.timestamps.size > 0 && parentBone.rotation.timestamps.size > 0 && childBone.rotation.timestamps.size > animIndexes.Value)
+                        parentBone.rotation.timestamps.values[animIndexes.Key] = childBone.rotation.timestamps.values[animIndexes.Value];
+                    //Scales
+                    if (parentBone.scale.timestamps.size > 0 && parentBone.scale.timestamps.size > 0 && childBone.scale.timestamps.size > animIndexes.Value)
+                        parentBone.scale.timestamps.values[animIndexes.Key] = childBone.scale.timestamps.values[animIndexes.Value];
+
+
+                    //Values
+
+                    //Translations
+                    if (parentBone.translation.values.size > 0 && parentBone.translation.values.size > 0 && childBone.translation.values.size > animIndexes.Value)
+                        parentBone.translation.values.values[animIndexes.Key] = childBone.translation.values.values[animIndexes.Value];
+                    //Rotations
+                    if (parentBone.rotation.values.size > 0 && parentBone.rotation.values.size > 0 && childBone.rotation.values.size > animIndexes.Value)
+                        parentBone.rotation.values.values[animIndexes.Key] = childBone.rotation.values.values[animIndexes.Value];
+                    //Scales
+                    if (parentBone.scale.values.size > 0 && parentBone.scale.values.size > 0 && childBone.scale.values.size > animIndexes.Value)
+                        parentBone.scale.values.values[animIndexes.Key] = childBone.scale.values.values[animIndexes.Value];
+                }
+
+            }
+
+
+            parentSkel.sks1.global_loops = skel.sks1.global_loops;
+            return parentSkel;
         }
 
         private void ReadSKID(BinaryReader reader, uint size)
@@ -130,7 +258,7 @@ namespace MultiConverterLib
             //Bones
             WriteBytes(0x2C, bones.bones.ToBytes(ref data));
             WriteBytes(0x34, bones.key_bone_lookup.ToBytes(ref data));
-            
+
             List<M2Attachment> wotlkAttachments = new List<M2Attachment>();
             List<M2UShort> lookupattach = new List<M2UShort>();
 
@@ -149,7 +277,7 @@ namespace MultiConverterLib
             //Attachments
             WriteBytes(0xF0, attachments.attachments.ToBytes(ref data));
             WriteBytes(0xF8, attachments.attachment_lookup_table.ToBytes(ref data));
-            
+
             InsertBytes(data.buffer.ToArray());
         }
 

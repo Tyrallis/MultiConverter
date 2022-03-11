@@ -17,13 +17,13 @@ namespace MultiConverter.Lib.Converters
 {
     public class Skel
     {
-        public SKL1 skl1;
-        public SKS1 sks1;
-        public SKA1 ska1;
-        public SKB1 skb1;
-        public SKPD skpd;
-        public AFID afid;
-        public BFID bfid;
+        public SKL1? skl1;
+        public SKS1? sks1;
+        public SKA1? ska1;
+        public SKB1? skb1;
+        public SKPD? skpd;
+        public AFID? afid;
+        public BFID? bfid;
 
         public Skel(ByteBuffer bb)
         {
@@ -140,7 +140,7 @@ namespace MultiConverter.Lib.Converters
     public class SKPD
     {
         byte[] _0x00 = new byte[8];
-        uint parent_skel_file_id;
+        public uint parent_skel_file_id;
         byte[] _0x0c = new byte[4];
 
         public SKPD(ref ByteBuffer bb, ref int offset)
