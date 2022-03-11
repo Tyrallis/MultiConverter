@@ -54,6 +54,13 @@ namespace MultiConverterLib
 
                         switch (chunk)
                         {
+                            case "MD21":
+                                // Skip to M2Array<Texture>.
+                                reader.ReadBytes(0x50);
+                                reader.ReadInt32();
+                                textureOffset = reader.ReadInt32();
+                                reader.BaseStream.Position = offset + size;
+                                break;
                             case "SKID":
                                 ReadSKID(reader, size);
                                 break;
@@ -260,6 +267,9 @@ namespace MultiConverterLib
             {
                 FixHelmOffset();
             }
+
+            if (Textures.Count >= 1)
+                FixTXID();
 
             return true;
         }
