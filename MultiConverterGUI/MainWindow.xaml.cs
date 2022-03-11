@@ -38,6 +38,7 @@ namespace MultiConverterGUI
 
         private void lb_Drop(object sender, DragEventArgs e)
         {
+            pb.Value = 0;
             if (e.Data.GetDataPresent(DataFormats.FileDrop))
             {
                 string[] list = (string[])e.Data.GetData(DataFormats.FileDrop);
@@ -222,7 +223,8 @@ namespace MultiConverterGUI
                 pb.Value = doneItems;
                 Thread.Sleep(10);
             }
-            pb.Value = doneItems;
+            pb.Value = 0;
+            lb.Items.Clear();
         }
 
         private void btnClear_Click(object sender, RoutedEventArgs e)
