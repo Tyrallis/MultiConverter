@@ -1,12 +1,19 @@
-﻿using MultiConverter.Lib.Converters;
+﻿using MultiConverter.Lib;
+using MultiConverter.Lib.Converters;
 using MultiConverter.Lib.Converters.Base;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text.RegularExpressions;
 
 namespace MultiConverterLib
 {
+    public struct Texture
+    {
+        public string Filename;
+        public int FilenameLength;
+    }
     /// <summary>
     /// TODO : Take into account the ribbons, fix animation id, fix particles blend
     /// </summary>
@@ -14,11 +21,13 @@ namespace MultiConverterLib
     {
         public bool NeedFix { get; private set; } = true;
         private bool fix_helm_ofs;
-        private int particleCount;
+        private int particleCount, texturesSize;
         private uint offset;
+        private int textureOffset;
         private HashSet<uint> shiftedOfs = new HashSet<uint>();
         private Dictionary<int, byte[]> multitextInfo = new Dictionary<int, byte[]>();
         private List<SkinFix> skins = new List<SkinFix>();
+        private Dictionary<Texture, int> Textures = new Dictionary<Texture, int>();
 
         private int animOfs, nAnim, animLookupOfs, nAnimLookups;
         private bool loadSkel = false;
@@ -47,6 +56,9 @@ namespace MultiConverterLib
                         {
                             case "SKID":
                                 ReadSKID(reader, size);
+                                break;
+                            case "TXID":
+                                ReadTXID(reader, size);
                                 break;
                             default:
                                 reader.BaseStream.Position += size;
@@ -580,6 +592,64 @@ namespace MultiConverterLib
 
             // correct the renderflags given
             FixRenderFlags();
+        }
+
+        private void ReadTXID(BinaryReader reader, uint size)
+        {
+            for (var i = 0u; i < size / 4u; i++)
+            {
+                var textureId = reader.ReadUInt32();
+
+                var filename = Listfile.LookupFilename(textureId, ".m2").Replace('/', '\\');
+                var texture = new Texture
+                {
+                    Filename = filename + "\0\0",
+                    FilenameLength = filename.Length
+                };
+
+                if (Textures.ContainsKey(texture))
+                    Textures[texture]++;
+                else
+                    Textures.Add(texture, 1);
+            }
+        }
+
+
+        private void FixTXID()
+        {
+            var textureBlockSize = 4 * sizeof(uint);
+            var textureKeys = Textures.Keys.ToList();
+
+            // Write `0` block at the end of the file.
+            AddEmptyBytes(Data.Length, (int)texturesSize + textureBlockSize);
+
+            for (var i = 0; i < Textures.Count; ++i)
+            {
+                var texture = textureKeys[i];
+
+                for (var j = 0; j < Textures[texture]; ++j)
+                {
+                    if (texture.FilenameLength == 0)
+                    {
+                        WriteInt(textureOffset + 8, 0);
+                        WriteInt(textureOffset + 12, 0x6);
+                    }
+                    else
+                    {
+                        // TEX_COMPONENT_HARDCODED
+                        int currentDataSize = Data.Length;
+
+                        InsertBytes(System.Text.Encoding.Default.GetBytes(texture.Filename));
+
+                        WriteInt(textureOffset + 8, texture.FilenameLength);
+                        WriteInt(textureOffset + 12, currentDataSize);
+
+                    }
+
+                    // Block reading finished, add 4 * sizeof(uint)
+                    textureOffset += textureBlockSize;
+                }
+            }
         }
 
         private short AnimationIndex(int anim_id)
