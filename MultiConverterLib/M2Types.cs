@@ -652,41 +652,6 @@ namespace MultiConverter.Lib.Converters
         }
     }
 
-    public class M2ParticleOld : IM2Array
-    {
-        public UInt32 particleId;
-        UInt32 flags;
-        C3Vector position;
-        ushort bone;
-        ushort texture;
-        ushort texture_0;
-        ushort texture_1;
-        ushort texture_2;
-        ushort unk;
-        M2Array<char> geometryModelFileName;
-        M2Array<char> recursionModelFileName;
-        byte blendingType;
-        byte emitterType;
-        ushort particleColorIndex;
-        float[] multiTextureParamX = new float[2];
-
-
-        public int GetSize()
-        {
-            throw new NotImplementedException();
-        }
-
-        public void Init(ref ByteBuffer bb, ref int offset)
-        {
-            throw new NotImplementedException();
-        }
-
-        public byte[] ToBytes(ref ByteBuffer data)
-        {
-            throw new NotImplementedException();
-        }
-    }
-
     public interface IM2Array
     {
         public void Init(ref ByteBuffer bb, ref int offset);
