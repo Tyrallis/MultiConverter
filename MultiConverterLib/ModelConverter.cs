@@ -58,8 +58,7 @@ namespace MultiConverterLib
                     reader.Close();
                 }
 
-                particleCount = ReadInt(0x128);
-                offset = ReadUInt(0x12C);
+                
 
                 if (loadSkel)
                 {
@@ -162,6 +161,8 @@ namespace MultiConverterLib
             }
 
             RemoveLegionChunks();
+            particleCount = ReadInt(0x128);
+            offset = ReadUInt(0x12C);
             if (loadSkel)
                 InsertSkelData();
 
