@@ -6,6 +6,7 @@ using System.Linq;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Diagnostics;
 using System.Text.RegularExpressions;
 
 namespace MultiConverterLib
@@ -33,6 +34,8 @@ namespace MultiConverterLib
         private int animOfs, nAnim, animLookupOfs, nAnimLookups;
         private bool loadSkel = false;
         private Skel? skel;
+        private bool hasParent;
+        private string parentname;
 
         public M2Converter(string m2, bool fix_helm) : base(m2)
         {
@@ -56,6 +59,17 @@ namespace MultiConverterLib
                         switch (chunk)
                         {
                             case "MD21":
+                                // Save start offset of MD20
+                                var offset = reader.BaseStream.Position;
+
+                                // Skip Magic & Version
+                                reader.ReadBytes(0x08);
+                                var modelNameSize = reader.ReadInt32();
+                                var modelNameOfs = reader.ReadUInt32() + 8;
+
+                                reader.BaseStream.Position = modelNameOfs;
+                                string modelName = new string(reader.ReadChars(modelNameSize)).Replace("\0", "");
+                                reader.BaseStream.Position = offset;
                                 // Skip to M2Array<Texture>.
                                 reader.ReadBytes(0x50);
                                 reader.ReadInt32();
@@ -78,7 +92,7 @@ namespace MultiConverterLib
                     reader.Close();
                 }
 
-                
+
 
                 if (loadSkel)
                 {
@@ -87,9 +101,11 @@ namespace MultiConverterLib
                     skel = new Skel(skelBb);
                     if (skel.skpd != null)
                     {
+                        hasParent = true;
                         //There is a parent skel file, so blend animations from the child and inherit the parent skel
                         skel = BlendWithParent(skel, m2);
                     }
+                    skel = InsertExternalAnimations(skel, m2);
                 }
             }
         }
@@ -97,6 +113,7 @@ namespace MultiConverterLib
         private Skel BlendWithParent(Skel skel, string m2)
         {
             string parentSkelName = Listfile.LookupFilename(skel.skpd.parent_skel_file_id, ".skel");
+            parentname = parentSkelName;    
             ByteBuffer parentSkelBb = new ByteBuffer(File.ReadAllBytes(System.IO.Path.GetDirectoryName(m2) + "\\" + System.IO.Path.GetFileName(parentSkelName)));
             Skel parentSkel = new Skel(parentSkelBb);
 
@@ -211,9 +228,113 @@ namespace MultiConverterLib
 
             }
 
-
             parentSkel.sks1.global_loops = skel.sks1.global_loops;
             return parentSkel;
+        }
+
+        struct Animation
+        {
+            public int id;
+            public int subId;
+        }
+
+        private Skel InsertExternalAnimations(Skel skel, string m2)
+        {
+            uint sequenceCount = skel.sks1.sequences.size;
+            List<string> missingAnimationFiles = new List<string>();
+            for (int i = 0; i < skel.sks1.sequences.size; i++)
+            {
+                M2Sequence sequence = skel.sks1.sequences.values[i];
+                if (!sequence.isInM2)
+                {
+                    string animFilename = m2.Replace(".m2", "") + sequence.id.ToString("D4") + "-" + sequence.variationIndex.ToString("D2") + ".anim";
+                    if (!File.Exists(animFilename))
+                    {
+                        if (hasParent) {
+                            animFilename = System.IO.Path.GetDirectoryName(m2) + "\\" + System.IO.Path.GetFileName(parentname) + sequence.id.ToString("D4") + "-" + sequence.variationIndex.ToString("D2") + ".anim";
+                            if (!File.Exists(animFilename))
+                            {
+                                missingAnimationFiles.Add(animFilename);
+                                continue;
+                            }
+                        }
+                        else
+                        {
+                            missingAnimationFiles.Add(animFilename);
+                            continue;
+                        }
+                    }
+                    ByteBuffer bb = new ByteBuffer(File.ReadAllBytes(animFilename));
+                    for (int boneIndex = 0; boneIndex < skel.skb1.bones.size; boneIndex++)
+                    {
+                        M2CompBone bone = skel.skb1.bones.values[boneIndex];
+                        uint n;
+                        if (bone.translation.timestamps.size == sequenceCount && bone.translation.values.size == sequenceCount && bone.translation.timestamps.values[i].size > 0 && bone.translation.values.values[i].size > 0)
+                        {
+                            n = bone.translation.timestamps.values[i].size;
+                            for (int nIndex = 0; nIndex < n; nIndex++)
+                            {
+                                bone.translation.timestamps.values[i].values[nIndex].value = bb.readUInt();
+                            }
+                            if ((n * 4) % 16 != 0)
+                                bb.readBytes(16 - (int)((n * 4) % 16));
+                            for (int nIndex = 0; nIndex < n; nIndex++)
+                            {
+                                bone.translation.values.values[i].values[nIndex].X = bb.readFloat();
+                                bone.translation.values.values[i].values[nIndex].Y = bb.readFloat();
+                                bone.translation.values.values[i].values[nIndex].Z = bb.readFloat();
+                            }
+                            if ((n * 12) % 16 != 0)
+                                bb.readBytes(16 - (int)((n * 12) % 16));
+                        }
+
+                        if (bone.rotation.timestamps.size == sequenceCount && bone.rotation.values.size == sequenceCount && bone.rotation.timestamps.values[i].size > 0 && bone.rotation.values.values[i].size > 0)
+                        {
+                            n = bone.rotation.timestamps.values[i].size;
+                            for (int nIndex = 0; nIndex < n; nIndex++)
+                            {
+                                bone.rotation.timestamps.values[i].values[nIndex].value = bb.readUInt();
+                            }
+                            if((n*4)%16 != 0)
+                                bb.readBytes(16 - (int)((n * 4) % 16));
+                            for (int nIndex = 0; nIndex < n; nIndex++)
+                            {
+                                bone.rotation.values.values[i].values[nIndex].x = bb.readShort();
+                                bone.rotation.values.values[i].values[nIndex].y = bb.readShort();
+                                bone.rotation.values.values[i].values[nIndex].z = bb.readShort();
+                                bone.rotation.values.values[i].values[nIndex].w = bb.readShort();
+                            }
+                            if ((n * 8) % 16 != 0)
+                                bb.readBytes(16 - (int)((n * 8) % 16));
+                        }
+
+                        if (bone.scale.timestamps.size == sequenceCount && bone.scale.values.size == sequenceCount && bone.scale.timestamps.values[i].size > 0 && bone.scale.values.values[i].size > 0)
+                        {
+                            n = bone.scale.timestamps.values[i].size;
+                            for (int nIndex = 0; nIndex < n; nIndex++)
+                            {
+                                bone.scale.timestamps.values[i].values[nIndex].value = bb.readUInt();
+                            }
+                            if ((n * 4) % 16 != 0)
+                                bb.readBytes(16 - (int)((n * 4) % 16));
+                            for (int nIndex = 0; nIndex < n; nIndex++)
+                            {
+                                bone.scale.values.values[i].values[nIndex].X = bb.readFloat();
+                                bone.scale.values.values[i].values[nIndex].Y = bb.readFloat();
+                                bone.scale.values.values[i].values[nIndex].Z = bb.readFloat();
+                            }
+                            if ((n * 12) % 16 != 0)
+                                bb.readBytes(16 - (int)((n * 12) % 16));
+                        }
+                        skel.skb1.bones.values[boneIndex] = bone;
+                    }
+                    sequence.SetIsInM2();
+                    skel.sks1.sequences.values[i] = sequence;
+                }
+            }
+
+            File.WriteAllLines(".\\missingAnimations.txt", missingAnimationFiles.ToArray());
+            return skel;
         }
 
         private void ReadSKID(BinaryReader reader, uint size)
@@ -313,7 +434,7 @@ namespace MultiConverterLib
                 InsertSkelData();
 
             FixCamera();
-            FixAnimations();
+            //FixAnimations();
             FixSkins();
 
             // Nothing to do

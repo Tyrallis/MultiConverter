@@ -465,7 +465,7 @@ namespace MultiConverter.Lib.Converters
         public ushort variationIndex;
         uint duration;
         float moveSpeed;
-        uint flags;
+        public uint flags;
         public bool isInM2 = false;
         short frequency;
         ushort padding;
@@ -481,6 +481,11 @@ namespace MultiConverter.Lib.Converters
         public M2Sequence(ref ByteBuffer bb, ref int offset)
         {
             Init(ref bb, ref offset);
+        }
+
+        public void SetIsInM2() 
+        {
+            flags = flags | (1 << 5);
         }
 
         public void Init(ref ByteBuffer bb, ref int offset)
@@ -568,7 +573,7 @@ namespace MultiConverter.Lib.Converters
 
     public class M2CompBone : IM2Array
     {
-        int key_bone_id;
+        public int key_bone_id;
         int flags;
         short parent_bone;
         ushort submesh_id;

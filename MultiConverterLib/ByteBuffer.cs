@@ -130,6 +130,16 @@ namespace MultiConverter.Lib.Converters.Base
             return temp;
         }
 
+        public byte[] readBytes(int size)
+        {
+            byte[] temp = new byte[size];
+            for (int i = 0; i < size; i++)
+            {
+                temp[i] = readByte();
+            }
+            return temp;
+        }
+
         public int readInt(ref int offset)
         {
             int index = offset == -1 ? currentIndex : offset;
